@@ -95,7 +95,8 @@
                 <div class="file-input-wrapper">
                     <input type="file" id="fileInput" class="file-input" multiple required>
                 </div>
-                <button type="submit" id="submitBtn" class="upload-submit-btn">파일 업로드</button>
+                <div id="fileList" style="margin-top: 15px; text-align: left; max-height: 200px; overflow-y: auto;"></div>
+                <button type="submit" id="submitBtn" class="upload-submit-btn" style="margin-top: 15px;">파일 업로드</button>
             </form>
             <div id="uploadStatus" class="upload-status"></div>
         </div>
@@ -128,6 +129,72 @@
         const fileInput = document.getElementById('fileInput');
         const submitBtn = document.getElementById('submitBtn');
         const statusDiv = document.getElementById('uploadStatus');
+        const fileListDiv = document.getElementById('fileList');
+
+        let accumulatedFiles = [];
+
+        fileInput.addEventListener('change', (e) => {
+            const newFiles = Array.from(e.target.files);
+            
+            newFiles.forEach(newFile => {
+                // 중복 추가 방지 (이름과 크기가 같은 파일)
+                const exists = accumulatedFiles.some(f => f.name === newFile.name && f.size === newFile.size);
+                if (!exists) {
+                    accumulatedFiles.push(newFile);
+                }
+            });
+            
+            updateFileListUI();
+        });
+
+        function updateFileListUI() {
+            fileListDiv.innerHTML = '';
+
+            accumulatedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.style.display = 'flex';
+                fileItem.style.justifyContent = 'space-between';
+                fileItem.style.alignItems = 'center';
+                fileItem.style.padding = '8px 12px';
+                fileItem.style.marginBottom = '6px';
+                fileItem.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                fileItem.style.borderRadius = '6px';
+                fileItem.style.fontSize = '14px';
+                fileItem.style.color = '#e2e8f0';
+
+                const fileNameSpan = document.createElement('span');
+                fileNameSpan.textContent = file.name;
+                fileNameSpan.style.overflow = 'hidden';
+                fileNameSpan.style.textOverflow = 'ellipsis';
+                fileNameSpan.style.whiteSpace = 'nowrap';
+                fileNameSpan.style.marginRight = '10px';
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.innerHTML = '&times;';
+                deleteBtn.style.background = 'none';
+                deleteBtn.style.border = 'none';
+                deleteBtn.style.color = '#ff6b6b';
+                deleteBtn.style.cursor = 'pointer';
+                deleteBtn.style.fontSize = '18px';
+                deleteBtn.style.lineHeight = '1';
+                deleteBtn.style.padding = '0 4px';
+                
+                deleteBtn.onclick = () => {
+                    accumulatedFiles.splice(index, 1);
+                    updateFileListUI();
+                };
+
+                fileItem.appendChild(fileNameSpan);
+                fileItem.appendChild(deleteBtn);
+                fileListDiv.appendChild(fileItem);
+            });
+
+            // DataTransfer를 이용해 실제 input 요소의 files 값 동기화
+            const dataTransfer = new DataTransfer();
+            accumulatedFiles.forEach(file => dataTransfer.items.add(file));
+            fileInput.files = dataTransfer.files;
+        }
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -177,6 +244,8 @@
                 
                 showMessage(`✅ 총 ${files.length}개의 파일이 성공적으로 업로드되었습니다!`, 'success');
                 form.reset();
+                accumulatedFiles = [];
+                updateFileListUI();
             } catch (error) {
                 console.error('Firebase Upload Error:', error);
                 showMessage('❌ 일부 파일 업로드 중 오류가 발생했습니다: ' + error.message, 'error');
