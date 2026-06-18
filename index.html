@@ -17,6 +17,14 @@
                 <img src="logo.png" alt="Sunilcs Logo" class="logo-image">
                 <span class="logo-text">Sunil Computer System</span>
             </a>
+            <button id="finalDownloadBtn" class="nav-download-btn">
+                <svg class="download-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Final_다운로드
+            </button>
         </div>
     </nav>
 
@@ -33,14 +41,14 @@
             <!-- Download and Upload Buttons -->
             <div class="cta-wrapper">
                 <div class="cta-buttons">
-                    <a href="downloads/host_ui.zip" class="cta-button" download>
+                    <button id="solutionDownloadBtn" class="cta-button" style="border: none; cursor: pointer; font-family: inherit;">
                         <svg class="download-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="7 10 12 15 17 10"></polyline>
                             <line x1="12" y1="15" x2="12" y2="3"></line>
                         </svg>
                         솔루션 다운로드 (Windows)
-                    </a>
+                    </button>
                     <a href="#uploadSection" class="cta-button upload-btn-secondary">
                         <svg class="download-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -101,7 +109,7 @@
     <!-- Firebase Upload Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL, listAll } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBYjbJrOCkJ4LOlJp7wx_VmHW7cf_JIW-Y",
@@ -181,6 +189,81 @@
         function showMessage(msg, type) {
             statusDiv.textContent = msg;
             statusDiv.className = 'upload-status ' + (type ? `status-${type}` : '');
+        }
+
+        // Final Download Button Logic
+        const finalDownloadBtn = document.getElementById('finalDownloadBtn');
+        if(finalDownloadBtn) {
+            finalDownloadBtn.addEventListener('click', async () => {
+                try {
+                    const finalFolderRef = ref(storage, 'Final/');
+                    const res = await listAll(finalFolderRef);
+                    
+                    if(res.items.length === 0) {
+                        alert('Final 폴더에 파일이 없습니다.');
+                    } else {
+                        if(confirm('다운로드 폴더에 저장합니다.\n[확인]을 누르시면 저장이 진행됩니다.')) {
+                            finalDownloadBtn.textContent = '다운로드 중...';
+                            finalDownloadBtn.disabled = true;
+
+                            for (const itemRef of res.items) {
+                                const url = await getDownloadURL(itemRef);
+                                window.location.href = url;
+                                await new Promise(resolve => setTimeout(resolve, 1500));
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Download error:', error);
+                    alert('다운로드 중 오류가 발생했습니다: ' + error.message);
+                } finally {
+                    finalDownloadBtn.innerHTML = `
+                        <svg class="download-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Final_다운로드`;
+                    finalDownloadBtn.disabled = false;
+                }
+            });
+        }
+
+        // Solution Download Button Logic
+        const solutionDownloadBtn = document.getElementById('solutionDownloadBtn');
+        if(solutionDownloadBtn) {
+            solutionDownloadBtn.addEventListener('click', async () => {
+                try {
+                    const hostFolderRef = ref(storage, 'host/');
+                    const res = await listAll(hostFolderRef);
+                    
+                    if(res.items.length === 0) {
+                        alert('서버에 다운로드할 파일이 없습니다.');
+                        return;
+                    }
+
+                    solutionDownloadBtn.textContent = '다운로드 준비 중...';
+                    solutionDownloadBtn.disabled = true;
+
+                    for (const itemRef of res.items) {
+                        const url = await getDownloadURL(itemRef);
+                        window.location.href = url;
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                    }
+                } catch (error) {
+                    console.error('Download error:', error);
+                    alert('다운로드 중 오류가 발생했습니다: ' + error.message);
+                } finally {
+                    solutionDownloadBtn.innerHTML = `
+                        <svg class="download-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        솔루션 다운로드 (Windows)`;
+                    solutionDownloadBtn.disabled = false;
+                }
+            });
         }
     </script>
 </body>
